@@ -264,9 +264,11 @@
 
         // Configure environment
         env.allowLocalModels = false;
+        env.backends.onnx.wasm.proxy = false; // Better for GPU
 
         let classifier = null;
         let isModelLoaded = false;
+        let deviceUsed = 'cpu';
 
         const textInput = document.getElementById('textInput');
         const analyzeBtn = document.getElementById('analyzeBtn');
@@ -279,16 +281,51 @@
 
         // Load model on page load
         window.addEventListener('DOMContentLoaded', async () => {
+            await checkGPUSupport();
             await loadModel();
         });
 
+        async function checkGPUSupport() {
+            if ('gpu' in navigator) {
+                try {
+                    const adapter = await navigator.gpu.requestAdapter();
+                    if (adapter) {
+                        console.log('✅ WebGPU available!');
+                        console.log('GPU Info:', {
+                            vendor: adapter.info?.vendor || 'Unknown',
+                            architecture: adapter.info?.architecture || 'Unknown',
+                            device: adapter.info?.device || 'Unknown',
+                            description: adapter.info?.description || 'Unknown'
+                        });
+
+                        // Check if it's AMD
+                        const vendorId = adapter.info?.vendor?.toLowerCase() || '';
+                        if (vendorId.includes('amd') || vendorId.includes('1002')) {
+                            console.log('🎮 AMD GPU detected! Perfect for Ryzen AI systems.');
+                        } else if (vendorId.includes('intel')) {
+                            console.log('💎 Intel GPU detected! Gen-' + (adapter.info?.architecture?.split('-')[1] || 'Unknown'));
+                        } else if (vendorId.includes('apple')) {
+                            console.log('🍎 Apple GPU detected! M-series or Apple Silicon.');
+                        } else if (vendorId.includes('nvidia')) {
+                            console.log('🟢 NVIDIA GPU detected!');
+                        }
+                        return true;
+                    }
+                } catch (e) {
+                    console.log('❌ WebGPU error:', e);
+                }
+            }
+            console.log('ℹ️ WebGPU not available, will use CPU (still fast!)');
+            return false;
+        }
+
         async function loadModel() {
             try {
-                showStatus('Loading AI model... This may take a minute on first visit.', 'info');
+                showStatus('Detecting GPU and loading AI model...', 'info');
                 progressBar.style.display = 'block';
                 analyzeBtn.disabled = true;
 
-                // Simulate progress (actual progress tracking is complex with Transformers.js)
+                // Simulate progress
                 let progress = 0;
                 const progressInterval = setInterval(() => {
                     progress += Math.random() * 15;
@@ -296,16 +333,43 @@
                     progressFill.style.width = progress + '%';
                 }, 500);
 
-                classifier = await pipeline(
-                    'sentiment-analysis',
-                    'Xenova/distilbert-base-uncased-finetuned-sst-2-english'
-                );
+                // Try WebGPU first (works with AMD Radeon iGPUs)
+                let loadSuccess = false;
+                try {
+                    console.log('Attempting to load with WebGPU...');
+                    classifier = await pipeline(
+                        'sentiment-analysis',
+                        'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
+                        { device: 'webgpu' }
+                    );
+                    deviceUsed = 'webgpu';
+                    loadSuccess = true;
+                    console.log('✅ Loaded with WebGPU acceleration!');
+                } catch (gpuError) {
+                    console.warn('WebGPU not available, trying CPU:', gpuError.message);
+
+                    // Fallback to CPU (WASM)
+                    try {
+                        classifier = await pipeline(
+                            'sentiment-analysis',
+                            'Xenova/distilbert-base-uncased-finetuned-sst-2-english'
+                        );
+                        deviceUsed = 'cpu';
+                        loadSuccess = true;
+                        console.log('✅ Loaded with CPU (WebAssembly)');
+                    } catch (cpuError) {
+                        throw cpuError;
+                    }
+                }
 
                 clearInterval(progressInterval);
                 progressFill.style.width = '100%';
 
                 isModelLoaded = true;
-                showStatus('✓ Model loaded! Ready to analyze sentiment.', 'info');
+                const deviceMsg = deviceUsed === 'webgpu'
+                    ? '✓ Model loaded with GPU acceleration!'
+                    : '✓ Model loaded with CPU (still fast!)';
+                showStatus(deviceMsg, 'info');
                 analyzeBtn.disabled = false;
 
                 setTimeout(() => {
@@ -341,16 +405,22 @@
             analyzeBtn.disabled = true;
 
             try {
+                // Time the inference
+                const startTime = performance.now();
                 const output = await classifier(text);
-                const result = output[0];
+                const inferenceTime = (performance.now() - startTime).toFixed(0);
+
+                const analysisResult = output[0];
 
                 // Map POSITIVE/NEGATIVE to lowercase
-                const sentiment = result.label.toLowerCase();
-                const conf = (result.score * 100).toFixed(2);
+                const sentiment = analysisResult.label.toLowerCase();
+                const conf = (analysisResult.score * 100).toFixed(2);
 
-                // Display result
-                showResult(sentiment, conf);
+                // Display result with inference time
+                showResult(sentiment, conf, inferenceTime);
                 hideStatus();
+
+                console.log(`Inference: ${inferenceTime}ms on ${deviceUsed.toUpperCase()}`);
 
             } catch (error) {
                 console.error('Analysis error:', error);
@@ -360,9 +430,15 @@
             }
         }
 
-        function showResult(sentiment, conf) {
+        function showResult(sentiment, conf, inferenceTime) {
             sentimentLabel.textContent = sentiment;
-            confidence.textContent = `Confidence: ${conf}%`;
+
+            let confText = `Confidence: ${conf}%`;
+            if (inferenceTime) {
+                const device = deviceUsed === 'webgpu' ? '⚡ GPU' : '🖥️ CPU';
+                confText += ` • ${device} • ${inferenceTime}ms`;
+            }
+            confidence.textContent = confText;
 
             result.className = 'result ' + sentiment;
             result.style.display = 'block';
