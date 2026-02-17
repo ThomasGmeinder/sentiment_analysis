@@ -1,41 +1,16 @@
-# Virtual Environment
+# Python virtual environment (if you test backend version)
 .venv/
 venv/
-env/
-ENV/
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
+# macOS
+.DS_Store
 
-# Flask
-instance/
-.webassets-cache
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# Environment variables
-.env
-.env.local
-
-# IDE
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Model cache (HuggingFace downloads models here)
-.cache/
-models/
 
 # Logs
 *.log

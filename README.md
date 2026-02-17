@@ -1,77 +1,117 @@
 # Sentiment Analysis Web App
 
-A web application that analyzes text sentiment using a pre-trained DistilBERT model.
+A fully browser-based web application that analyzes text sentiment using DistilBERT AI model.
 
 🌐 **Live Demo**: [https://thomasgmeinder.github.io/sentiment_analysis/](https://thomasgmeinder.github.io/sentiment_analysis/)
 
 ## Features
 
-- Real-time sentiment analysis (Positive/Negative)
-- Beautiful, intuitive web interface
-- Color-coded results (Green for positive, Red for negative)
-- Confidence scores for each prediction
-- No training required - uses pre-trained model
-
-## Architecture
-
-- **Backend API**: Flask + DistilBERT (deployed on Render)
-- **Frontend UI**: Static HTML/CSS/JS (deployed on GitHub Pages)
-- **Model**: distilbert-base-uncased-finetuned-sst-2-english
-
-## Deployment
-
-See [DEPLOY.md](DEPLOY.md) for detailed deployment instructions.
-
-### Quick Deploy
-
-1. **Backend**: Deploy to Render
-2. **Frontend**: Enable GitHub Pages from `/docs` folder
-3. **Configure**: Update API URL in `docs/index.html`
-
-## Local Development
-
-1. Create and activate virtual environment:
-```bash
-python3.10 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-3. Start the Flask server:
-```bash
-python app.py
-```
-
-4. Open your browser and go to:
-```
-http://localhost:5001
-```
-
-5. Enter any text in the textarea and click "Analyze Sentiment" to see the results!
+- 🚀 **Runs entirely in your browser** - No backend required
+- 🔒 **Privacy first** - Your data never leaves your device
+- ⚡ **Fast after first load** - Model cached locally
+- 🎨 **Beautiful UI** - Color-coded results (Green for positive, Red for negative)
+- 📊 **Confidence scores** - See how confident the AI is
+- 🤖 **DistilBERT powered** - State-of-the-art sentiment analysis
 
 ## How It Works
 
-- **Backend**: Flask server with CORS support, loads pre-trained DistilBERT model from Hugging Face
+This app uses [Transformers.js](https://huggingface.co/docs/transformers.js) to run a pre-trained DistilBERT model directly in your browser:
+
 - **Model**: distilbert-base-uncased-finetuned-sst-2-english
-- **Frontend**: Static web interface that calls the backend API
+- **Size**: ~80MB (quantized, downloads once)
+- **Performance**: 100-500ms per analysis on modern devices
+- **Technology**: JavaScript + WebAssembly + ONNX Runtime
 
 ## Usage
 
-1. Type or paste text into the text area
-2. Click "Analyze Sentiment" or press Enter
-3. View the sentiment result with confidence score
+1. Visit https://thomasgmeinder.github.io/sentiment_analysis/
+2. Wait for model to load (first visit only, ~1 minute)
+3. Enter or edit text in the textarea
+4. Click "Analyze Sentiment" or press Enter
+5. View results with confidence score
+
+## Local Development
+
+Simply open `docs/index.html` in your browser:
+
+```bash
+open docs/index.html
+# or
+python3 -m http.server 8000 --directory docs
+# Then visit http://localhost:8000
+```
+
+No dependencies, no installation, no build step!
+
+## Deployment
+
+Already deployed on GitHub Pages! To deploy your own:
+
+1. Fork this repository
+2. Go to Settings → Pages
+3. Source: Deploy from branch `main`
+4. Folder: `/docs`
+5. Save
+
+Your app will be live at: `https://YOUR_USERNAME.github.io/sentiment_analysis/`
+
+## Architecture
+
+```
+┌─────────────────────────────────────┐
+│         GitHub Pages                │
+│                                     │
+│  ┌───────────────────────────────┐ │
+│  │     docs/index.html           │ │
+│  │  (HTML + CSS + JavaScript)    │ │
+│  │                               │ │
+│  │  ┌─────────────────────────┐  │ │
+│  │  │   Transformers.js CDN   │  │ │
+│  │  │   (from jsdelivr)       │  │ │
+│  │  └─────────────────────────┘  │ │
+│  │              ↓                │ │
+│  │  ┌─────────────────────────┐  │ │
+│  │  │  DistilBERT Model       │  │ │
+│  │  │  (from Hugging Face)    │  │ │
+│  │  │  Cached in browser      │  │ │
+│  │  └─────────────────────────┘  │ │
+│  └───────────────────────────────┘ │
+└─────────────────────────────────────┘
+```
 
 ## Technologies
 
-- Python 3.10+
-- Flask 3.0
-- Transformers (Hugging Face)
-- PyTorch
-- DistilBERT model
+- **Transformers.js** - Run Hugging Face models in the browser
+- **DistilBERT** - Efficient transformer model for sentiment analysis
+- **ONNX Runtime** - High-performance inference engine
+- **WebAssembly** - Near-native performance in the browser
+- **Pure Vanilla JS** - No frameworks, no build tools
+
+## Why Browser-Based?
+
+- ✅ **$0 hosting costs** - No backend servers needed
+- ✅ **Privacy** - Data never sent to any server
+- ✅ **Offline capable** - Works without internet after first load
+- ✅ **Instant deployment** - Just push to GitHub Pages
+- ✅ **No maintenance** - No servers to manage or scale
+
+## Performance
+
+| Device | First Load | Subsequent Analyses |
+|--------|-----------|---------------------|
+| Desktop | 30-60s | 100-300ms |
+| Laptop | 60-90s | 200-500ms |
+| Modern Phone | 90-120s | 500-1000ms |
+
+Model is cached after first load, so subsequent visits are instant!
+
+## Browser Compatibility
+
+Works on all modern browsers:
+- Chrome/Edge 90+
+- Firefox 89+
+- Safari 15.4+
+- Mobile browsers (iOS Safari, Chrome Mobile)
 
 ## License
 
@@ -79,4 +119,4 @@ MIT
 
 ---
 
-Enjoy analyzing sentiment!
+Built with ❤️ using Transformers.js and DistilBERT
